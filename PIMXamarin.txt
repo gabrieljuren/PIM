@@ -1,0 +1,144 @@
+
+---->INSTALAR API: Xam.Plugin.ExternalMaps
+
+--> MainPage BACKEND
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Xamarin.Forms;
+using App2.Map.Service;
+using App2.Map.Model;
+using Plugin.ExternalMaps;
+
+namespace App2.Map
+{
+    public partial class MainPage : ContentPage
+    {   
+        public MainPage()
+        {
+            InitializeComponent();
+            lvClientes.ItemsSource = ClienteService.getCliestes();
+        }
+
+        private async void lvClientes_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+        {
+            try
+            {
+                var cliente = e.SelectedItem as Cliente;
+                if(cliente.nome != null && cliente.endereco != null && cliente.cep != null)
+                {
+                    await PoeEnderecoNoMapa(cliente);
+                }
+                else
+                {
+                    return;
+                }
+            }
+            catch(Exception ex)
+            {
+                await DisplayAlert("Erro: ", ex.Message, "OK");
+            }          
+        }
+
+        private async Task PoeEnderecoNoMapa(Cliente cli)
+        {
+            string pais = "BR";
+            string codigoPais = "55";
+
+            if(string.IsNullOrEmpty(cli.nome) && string.IsNullOrEmpty(cli.cep)
+                && string.IsNullOrEmpty(cli.endereco) && string.IsNullOrEmpty(cli.cidade))
+            {
+                await DisplayAlert("Dados invalidos", "Faltam dados obrigatórios...", "OK");
+            }
+            else
+            {
+                try
+                {
+                    await CrossExternalMaps.Current.NavigateTo("Teste", cli.endereco, cli.cidade, cli.estado, cli.cep, pais, codigoPais);
+                }
+                catch(Exception ex)
+                {
+                    throw ex;   
+                }
+            }
+        }
+    }
+}
+
+
+
+-->MainPage FRONT END
+
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:App2.Map"
+             x:Class="App2.Map.MainPage">
+
+    <StackLayout>
+        <ListView x:Name="lvClientes" BackgroundColor="#cdf3ff" 
+                  HasUnevenRows="True" SeparatorColor="Blue"
+                  ItemSelected="lvClientes_ItemSelected">
+            <ListView.ItemTemplate BackGroundColor="#e6ffe6">
+                <DataTemplate>
+                    <ViewCell>
+                        <StackLayout HorizontalOptions="StartAndExpand">
+                            <Label Text="{ Binding nome }" TextColor="Blue" FontSize="Small"/>
+                            <Label Text="{ Binding endereco }" TextColor="Black" FontSize="Small"/>
+                            <Label Text="{ Binding cidade }" TextColor="Gray" FontSize="Small"/>
+                        </StackLayout>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </StackLayout>
+
+</ContentPage>
+
+
+=--> CLASSE CLIENTE
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace App2.Map.Model
+{
+    public class Cliente
+    {
+        public long? ClienteId { get; set; }
+        public string nome { get; set; }
+        public string endereco { get; set; }
+        public string cep { get; set; }
+        public string estado { get; set; }
+        public string cidade { get; set; }
+
+    }
+}
+
+---> CLASSE CLIENTESERVICE
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using App2.Map.Model;
+
+namespace App2.Map.Service
+{
+    public class ClienteService
+    {
+        public static IEnumerable<Cliente> getCliestes()
+        {
+            return new List<Cliente>()
+            {
+                new Cliente() { nome = "Gabriel Juren", endereco = "Rua Dr. Edmundo Bitencourt, 239", cep = "02969070", cidade = "São Paulo", estado = "SP" }
+            };
+        }
+    }
+}
+
+
+
