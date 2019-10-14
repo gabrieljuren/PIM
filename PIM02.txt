@@ -1,0 +1,158 @@
+Master:
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="App02_Xamarin.Master.Manutencao"
+             xmlns:master="clr-namespace:App02_Xamarin.Master"
+             BackgroundImage="dirigindoPim.jpg"         
+             >
+    <ContentPage.Content>
+        <StackLayout>
+
+            <Label Text="Coloque as informações do destino" FontSize="20" TextColor="White" FontAttributes="Bold"/>
+            <Entry Placeholder="Endereço" x:Name="adress" PlaceholderColor="Black" FontAttributes="Italic"/>
+            <Entry Placeholder="Cidade" x:Name="city" PlaceholderColor="Black" FontAttributes="Italic"/>
+            <Picker x:Name="pckEstados" SelectedIndexChanged="pckEstados_SelectedIndexChanged"/>    
+            <Entry Placeholder="CEP" x:Name="CEP" PlaceholderColor="Black" FontAttributes="Italic"/>
+            <Entry Placeholder="NÚMERO" x:Name="NUM"  PlaceholderColor="Black" FontAttributes="Italic"/>
+            <Button Text="LOCALIZAR" Clicked="Localizar"/>
+            <Button Text="VOLTAR" Clicked="Fechar"/>
+            <Button Text="LOCALIZAR PELO CEP" Clicked="buscarCEP"/>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>
+
+Master Behind:
+using Plugin.ExternalMaps;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using Xamarin.Forms;
+using Xamarin.Forms.Xaml;
+using App02_Xamarin.Servico;
+using App02_Xamarin.Modelo;
+
+namespace App02_Xamarin.Master
+{
+    [XamlCompilation(XamlCompilationOptions.Compile)]
+    public partial class Manutencao : ContentPage
+    {
+        object estadoSelecionado = null;
+        public Manutencao()
+        {
+            InitializeComponent();
+             
+            pckEstados.Title = "Selecione um estado";
+            var opcoes = new List<string> { "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES","FN", "GO", "MA", "MG", "MS", "MT", 
+                                            "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"  };
+
+            foreach(string estado in opcoes)
+            {
+                pckEstados.Items.Add(estado);
+            }
+        }
+
+        private void pckEstados_SelectedIndexChanged(object sender, EventArgs args)
+        {
+            estadoSelecionado = pckEstados.Items[pckEstados.SelectedIndex];
+            DisplayAlert(estadoSelecionado.ToString(), "Foi o item selecionado", "OK");
+        }
+
+        private void Localizar(object sender, EventArgs args)
+        {
+            string pais = "BR";
+            string codigoPais = "55";
+            string Endereco = adress.Text;
+            string Cidade = city.Text;
+            string Estado = estadoSelecionado.ToString();
+            string Cep = CEP.Text;
+
+            CrossExternalMaps.Current.NavigateTo("teste", Endereco, Cidade, Estado, Cep, pais, codigoPais);
+        }
+
+        private void Fechar(object sender, EventArgs args)
+        {
+            Navigation.PopModalAsync();
+        }
+
+        private void buscarCEP(object sender, EventArgs args)
+        {
+            string numero = NUM.Text;
+            string pais = "BR";
+            string codigoPais = "55";
+            string cep = CEP.Text.Trim();]
+            Endereco end = ViaCEP.BuscarEnderecoViaCEP(cep);
+
+            if (numero == null)
+                DisplayAlert("CAMPO NÂO INFORMADO", "MENCIONE O NÚMERO", "OK");
+
+            else if(numero != null)
+            {
+                string end2 = end.logradouro;
+                string endereco = end2 + " " + numero;
+                CrossExternalMaps.Current.NavigateTo("teste", endereco, end.localidade, end.uf, cep, pais, codigoPais);
+            }
+            
+           
+            //Resultado.Text = string.Format("Endereco: {0},{1} " + end.localidade, end.uf, end.logradouro);
+        }
+    }
+}
+
+Endereço:
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace App02_Xamarin.Modelo
+{
+    public class Endereco
+    {
+
+        public string cep { get; set; }
+        public string logradouro { get; set; }
+        public string complemento { get; set; }
+        public string bairro { get; set; }
+        public string localidade { get; set; }
+        public string uf { get; set; }
+        public string unidade { get; set; }
+        public string ibge { get; set; }
+        public string gia { get; set; }
+    }
+}
+
+ViaCEP:
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Net;
+using App02_Xamarin.Modelo;
+using Newtonsoft.Json;
+
+namespace App02_Xamarin.Servico
+{
+  public  class ViaCEP
+    {
+        private static string EnderecoURL = "https://viacep.com.br/ws/{0}/json";
+
+        public static Endereco BuscarEnderecoViaCEP(string cep)
+        {
+            string endereco = string.Format(EnderecoURL, cep);
+
+            WebClient wc = new WebClient();
+            string conteudo = wc.DownloadString(endereco);
+
+            Endereco end = JsonConvert.DeserializeObject<Endereco>(conteudo);
+
+            return end;
+        }
+    }
+}
+
+
+
